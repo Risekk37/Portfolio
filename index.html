@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF & Image Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            background: #f8f8f8; 
+            margin: 0; 
+            font-family: Arial, sans-serif;
+        }
+        .container { 
+            display: flex; 
+            gap: 20px; 
+            justify-content: center; /* 중앙 정렬 */
+            align-items: center; /* 세로 중앙 정렬 */
+            width: 100%;
+        }
+        .pdf-container, .image-container { 
+            position: relative; 
+            width: 45%; 
+            cursor: pointer; 
+            display: flex; 
+            justify-content: center; /* 중앙 정렬 */
+            align-items: center; /* 세로 중앙 정렬 */
+        }
+        img, canvas { 
+            width: 100%; 
+            display: block; 
+        }
+        #cv-image {
+            height: 50%; /* CV 이미지 세로 크기 50%로 설정 */
+        }
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0); /* 기본적으로 투명 */
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; color: white; font-weight: bold;
+            transition: background 0.3s ease-in-out;
+            opacity: 0; /* 처음에는 안 보이게 */
+        }
+        .pdf-container:hover .overlay, .image-container:hover .overlay {
+            background: rgba(0, 0, 0, 0.5); /* Hover 시 어두워짐 */
+            opacity: 1; /* Hover 시 글자 표시 */
+        }
+        #fullscreen-viewer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9); display: none;
+            justify-content: center; align-items: flex-start; /* 위쪽부터 보이게 수정 */
+            padding: 5vh 10vw; /* 패딩 조정 */
+            overflow-y: auto; /* 스크롤 가능하게 변경 */
+        }
+        #fullscreen-content { width: 80%; text-align: center; }
+        #close-btn {
+            position: fixed; top: 20px; right: 30px; font-size: 30px; color: white;
+            cursor: pointer; background: none; border: none;
+        }
+        
+        /* 왼쪽 상단 텍스트 스타일 */
+        .top-left {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 40px;
+            font-weight: bold;
+            color: rgb(128, 128, 128);
+            padding : 20px;
+        }
+
+        /* 오른쪽 상단 연락처 스타일 */
+        .top-right {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 14px;
+            text-align: right;
+            color: rgb(128, 128, 128);
+            padding : 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 왼쪽: CV (JPG) -->
+        <div class="image-container" id="cv-container">
+            <img id="cv-image" src="CV_KitaeKim.jpg" alt="CV" style="width: 50%; height: auto;">
+            <div class="overlay">CV</div>
+        </div>
+
+        <!-- 오른쪽: Portfolio (PDF) -->
+        <div class="pdf-container" id="portfolio-container" data-pdf="Kitae Kim(Portfolio)-25.2.pdf">
+            <canvas id="portfolio-canvas"></canvas>
+            <div class="overlay">Portfolio</div>
+        </div>
+    </div>
+
+    <!-- 상단 텍스트 -->
+    <div class="top-left">Kitae Kim</div>
+    <div class="top-right">
+        Address | New York, NY 10025 <br>
+        Email | Ktkim8461@gmail.com, kk3775@columbia.edu <br>
+        Phone | +1 646 232 7154
+    </div>
+
+    <!-- 전체 화면 모드 -->
+    <div id="fullscreen-viewer">
+        <button id="close-btn">&times;</button>
+        <div id="fullscreen-content"></div>
+    </div>
+
+    <script>
+        const portfolioUrl = "Kitae Kim(Portfolio)-25.2.pdf";
+
+        const portfolioCanvas = document.getElementById("portfolio-canvas");
+        const fullscreenViewer = document.getElementById("fullscreen-viewer");
+        const fullscreenContent = document.getElementById("fullscreen-content");
+        const closeBtn = document.getElementById("close-btn");
+
+        function loadFirstPage(url, canvas) {
+            pdfjsLib.getDocument(url).promise.then(pdf => {
+                pdf.getPage(1).then(page => {
+                    const ctx = canvas.getContext("2d");
+                    const viewport = page.getViewport({ scale: 1.2 }); /* 스케일 조정 */
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+
+                    const renderContext = { canvasContext: ctx, viewport: viewport };
+                    page.render(renderContext);
+                }).catch(error => console.error("Error rendering first page:", error));
+            }).catch(error => console.error("Error loading PDF:", error));
+        }
+
+        // Portfolio 첫 페이지 로드
+        loadFirstPage(portfolioUrl, portfolioCanvas);
+
+        // 전체 화면에서 Portfolio 전체 페이지 로드
+        function openFullscreen(pdfUrl) {
+            fullscreenViewer.style.display = "flex";
+            fullscreenContent.innerHTML = ""; // 기존 내용 삭제
+
+            pdfjsLib.getDocument(pdfUrl).promise.then(pdf => {
+                let pageCount = pdf.numPages;
+                let pagesRendered = 0;
+
+                function renderPage(pageNum) {
+                    pdf.getPage(pageNum).then(page => {
+                        const canvas = document.createElement("canvas");
+                        const ctx = canvas.getContext("2d");
+                        const viewport = page.getViewport({ scale: 1.2 }); /* 스케일 조정 */
+
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+
+                        const renderContext = { canvasContext: ctx, viewport: viewport };
+                        page.render(renderContext).promise.then(() => {
+                            pagesRendered++;
+                        });
+
+                        fullscreenContent.appendChild(canvas);
+                    }).catch(error => console.error(`Error rendering page ${pageNum}:`, error));
+                }
+
+                for (let i = 1; i <= pageCount; i++) { // 1~25 페이지 순서대로 로드
+                    renderPage(i);
+                }
+            }).catch(error => console.error("Error loading full PDF:", error));
+        }
+
+        // 클릭 이벤트 설정
+        document.getElementById("cv-container").addEventListener("click", () => {
+            fullscreenViewer.style.display = "flex";
+            fullscreenContent.innerHTML = `<img src="CV_KitaeKim.jpg" style="width:100%;">`;
+        });
+
+        document.getElementById("portfolio-container").addEventListener("click", () => openFullscreen(portfolioUrl));
+
+        // 전체 화면 닫기
+        closeBtn.addEventListener("click", () => {
+            fullscreenViewer.style.display = "none";
+        });
+    </script>
+
+</body>
+</html>
