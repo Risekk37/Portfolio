@@ -72,6 +72,7 @@
             font-weight: bold;
             color: rgb(128, 128, 128);
             padding: 20px;
+            z-index: 1; /* 왼쪽 텍스트가 맨 위로 오도록 설정 */
         }
 
         /* 오른쪽 상단 연락처 스타일 */
@@ -83,6 +84,7 @@
             text-align: right;
             color: rgb(128, 128, 128);
             padding: 20px;
+            z-index: 1; /* 오른쪽 텍스트도 맨 위로 설정 */
         }
 
         /* 오른쪽 글씨를 왼쪽 아래로 내리는 스타일 */
@@ -94,6 +96,7 @@
             text-align: left;
             color: rgb(128, 128, 128);
             padding: 20px;
+            z-index: 1; /* top-right 요소 위에 표시되지 않도록 설정 */
         }
     </style>
 </head>
