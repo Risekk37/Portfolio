@@ -71,7 +71,7 @@
             font-size: 40px;
             font-weight: bold;
             color: rgb(128, 128, 128);
-            padding : 20px;
+            padding: 20px;
         }
 
         /* 오른쪽 상단 연락처 스타일 */
@@ -82,7 +82,18 @@
             font-size: 14px;
             text-align: right;
             color: rgb(128, 128, 128);
-            padding : 20px;
+            padding: 20px;
+        }
+
+        /* 오른쪽 글씨를 왼쪽 아래로 내리는 스타일 */
+        .top-right-below {
+            position: absolute;
+            top: 100px;  /* 왼쪽 글씨 밑으로 배치 */
+            left: 10px;
+            font-size: 14px;
+            text-align: left;
+            color: rgb(128, 128, 128);
+            padding: 20px;
         }
     </style>
 </head>
@@ -104,7 +115,7 @@
 
     <!-- 상단 텍스트 -->
     <div class="top-left">Kitae Kim</div>
-    <div class="top-right">
+    <div class="top-right" id="top-right">
         Address | New York, NY 10025 <br>
         Email | Ktkim8461@gmail.com, kk3775@columbia.edu <br>
         Phone | +1 646 232 7154
@@ -124,6 +135,7 @@
         const fullscreenContent = document.getElementById("fullscreen-content");
         const closeBtn = document.getElementById("close-btn");
 
+        // Portfolio 첫 페이지 로드
         function loadFirstPage(url, canvas) {
             pdfjsLib.getDocument(url).promise.then(pdf => {
                 pdf.getPage(1).then(page => {
@@ -138,7 +150,6 @@
             }).catch(error => console.error("Error loading PDF:", error));
         }
 
-        // Portfolio 첫 페이지 로드
         loadFirstPage(portfolioUrl, portfolioCanvas);
 
         // 전체 화면에서 Portfolio 전체 페이지 로드
@@ -174,7 +185,6 @@
             }).catch(error => console.error("Error loading full PDF:", error));
         }
 
-        // 클릭 이벤트 설정
         document.getElementById("cv-container").addEventListener("click", () => {
             fullscreenViewer.style.display = "flex";
             fullscreenContent.innerHTML = `<img src="CV_KitaeKim.jpg" style="width:100%;">`;
@@ -182,10 +192,37 @@
 
         document.getElementById("portfolio-container").addEventListener("click", () => openFullscreen(portfolioUrl));
 
-        // 전체 화면 닫기
         closeBtn.addEventListener("click", () => {
             fullscreenViewer.style.display = "none";
         });
+
+        // 화면 크기에 따라 오른쪽 글씨 위치 조정
+        function adjustTextPosition() {
+            const topLeft = document.querySelector(".top-left");
+            const topRight = document.getElementById("top-right");
+            const topRightBelow = document.createElement("div");
+            topRightBelow.classList.add("top-right-below");
+            topRightBelow.innerHTML = topRight.innerHTML;
+
+            const distance = topRight.getBoundingClientRect().left - topLeft.getBoundingClientRect().right;
+
+            // 30vw 이하일 경우 오른쪽 글씨를 왼쪽 글씨 밑으로 내림
+            if (distance < window.innerWidth * 0.3) {
+                topRight.style.display = "none";
+                document.body.appendChild(topRightBelow); // 오른쪽 글씨를 아래로 이동
+            } else {
+                topRight.style.display = "block";
+                if (topRightBelow.parentNode) {
+                    topRightBelow.parentNode.removeChild(topRightBelow);
+                }
+            }
+        }
+
+        // 화면 크기 변경 시 위치 조정
+        window.addEventListener("resize", adjustTextPosition);
+
+        // 초기 위치 조정
+        adjustTextPosition();
     </script>
 
 </body>
